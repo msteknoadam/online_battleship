@@ -3,9 +3,7 @@
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.ts",
-	"scripts": {
-		"install": "npm i"
-	},
+	"scripts": {},
 	"author": "TEKNO",
 	"license": "MIT",
 	"dependencies": {
