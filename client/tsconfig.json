@@ -1,0 +1,9 @@
+{
+	"exclude": ["node_modules", "client", "server"],
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"module": "es6",
+		"target": "es3",
+		"allowJs": true
+	}
+}

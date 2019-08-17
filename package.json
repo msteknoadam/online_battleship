@@ -1,0 +1,44 @@
+{
+	"name": "online_battleship",
+	"version": "1.0.0",
+	"description": "Trying to build an online battleship 1v1 game using NodeJS",
+	"main": "backend.ts",
+	"scripts": {
+		"install:backend": "npm i",
+		"install:frontend": "cd client && npm i",
+		"dev:backend": "nodemon --ignore client/ --exec node_modules/.bin/ts-node -- ./backend/server.ts",
+		"dev:frontend": "webpack --config ./webpack.frontend.config.js --watch",
+		"start:backend": "node_modules/.bin/ts-node -- ./server/server.ts",
+		"start:frontend": "webpack --config ./webpack.frontend.config.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/msteknoadam/online_battleship.git"
+	},
+	"keywords": [
+		"nodejs",
+		"battleship",
+		"online",
+		"pvp"
+	],
+	"author": "TEKNO",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/msteknoadam/online_battleship/issues"
+	},
+	"homepage": "https://github.com/msteknoadam/online_battleship#readme",
+	"devDependencies": {
+		"nodemon": "^1.19.1",
+		"ts-loader": "^6.0.4",
+		"ts-node": "^8.3.0",
+		"typescript": "^3.5.3",
+		"webpack": "^4.39.2",
+		"webpack-cli": "^3.3.6"
+	},
+	"dependencies": {
+		"@types/express": "^4.17.0",
+		"@types/socket.io": "^2.1.2",
+		"express": "^4.17.1",
+		"socket.io": "^2.2.0"
+	}
+}
