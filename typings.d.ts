@@ -12,3 +12,7 @@ export type activeGames = {
 		};
 	};
 };
+
+export type playingUsers = {
+	[s: string]: string;
+};

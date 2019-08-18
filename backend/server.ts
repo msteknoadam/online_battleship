@@ -27,6 +27,7 @@ io.use((socket, next) =>
 );
 
 const activeGames: types.activeGames = {};
+const playingUsers: types.playingUsers = {};
 
 const createGame = (creatorUserid: string) => {
 	const gameId = "g" + utils.makeid();
@@ -47,29 +48,53 @@ const createGame = (creatorUserid: string) => {
 	} else return createGame(creatorUserid);
 };
 
+const endGame = (gameId: string, userAuid: string, userBuid: string) => {
+	try {
+		delete playingUsers[userAuid];
+		delete playingUsers[userBuid];
+	} catch (e) {
+		console.error(
+			`There has been an error while trying to end the game #${gameId}`
+		);
+	}
+};
+
 app.get("/", (req, res) => {
-	res.sendFile(path.join(__dirname, "..", "client", "index.html"));
+	if (!playingUsers[req.session.id])
+		res.sendFile(path.join(__dirname, "..", "client", "index.html"));
+	else
+		res.send(
+			`<script>location.href = location.origin + '/game/${
+				playingUsers[req.session.id]
+			}'</script>`
+		);
 });
 
 app.get("/game/*", (req, res) => {
 	const requestedGame = req.path.replace("/game/", "");
-	if (!activeGames[requestedGame]) utils.error404(req, res);
-	else if (
-		req.session.id !== activeGames[requestedGame].userA.uid &&
-		req.session.id !== activeGames[requestedGame].userB.uid
-	)
-		utils.error401(req, res);
-	else {
-		res.send(
-			`<h1>Game #${requestedGame}</h1>${Object.keys(
-				activeGames[requestedGame]
-			).map(key => {
-				const val = activeGames[requestedGame][key];
-				return `<h2>Key: ${key}</h2>|<h2>Value: ${JSON.stringify(
-					val
-				)}</h2><br />`;
-			})}`
-		);
+	if (requestedGame.endsWith(".js")) {
+		res.sendFile(path.join(__dirname, "..", "client", "game.js"));
+	} else {
+		if (!activeGames[requestedGame]) utils.error404(req, res);
+		else if (
+			req.session.id !== activeGames[requestedGame].userA.uid &&
+			req.session.id !== activeGames[requestedGame].userB.uid
+		)
+			utils.error401(req, res);
+		else {
+			fs.readFile(
+				path.join(__dirname, "..", "client", "game.html"),
+				(err, data) => {
+					if (err) res.sendStatus(500);
+					else
+						res.send(
+							data
+								.toString()
+								.replace("{{ gameId }}", requestedGame)
+						);
+				}
+			);
+		}
 	}
 });
 
@@ -98,6 +123,7 @@ io.on("connection", socket => {
 		const gameId = createGame(socket.request.session.id);
 		socket.emit("gameCreateSuccessful", gameId);
 		socket.broadcast.emit("gameCreated", gameId);
+		playingUsers[socket.request.session.id] = gameId;
 	});
 	socket.on("joinGame", (gameId: string) => {
 		if (!activeGames[gameId]) {
@@ -117,19 +143,18 @@ io.on("connection", socket => {
 					socket.request.session.id
 				} tried to join to a full game.`
 			);
-			/**
-			 * TODO: Add another check if that user is currently playing in another game.
-			 * A way to succeed that would be adding that userid to currentlyPlaying kind of
-			 * array and remove both users when the game is over. This could be also done by
-			 * looping through the activeGames and checking if that userid exists in anywhere
-			 * but that may take some & CPU so the first approach is prob. better.
-			 */
 		} else if (activeGames[gameId].userA.uid === socket.request.session.id)
 			socket.emit("redirectJoin", gameId);
+		else if (playingUsers[socket.request.session.id])
+			socket.emit(
+				"redirectJoin",
+				playingUsers[socket.request.session.id]
+			);
 		else {
 			activeGames[gameId].userB.uid = socket.request.session.id;
 			socket.emit("joinSuccess", gameId);
 			socket.broadcast.emit("gameClosedForJoin", gameId);
+			playingUsers[socket.request.session.id] = gameId;
 		}
 	});
 	socket.on("disconnect", () => {
