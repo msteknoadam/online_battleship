@@ -3,7 +3,6 @@
 	"compilerOptions": {
 		"noImplicitAny": true,
 		"module": "es6",
-		"target": "es3",
-		"allowJs": true
+		"target": "es3"
 	}
 }

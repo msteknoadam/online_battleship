@@ -94,7 +94,7 @@
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! socket.io-client */ \"./client/node_modules/socket.io-client/lib/index.js\");\n/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(socket_io_client__WEBPACK_IMPORTED_MODULE_0__);\n\r\nvar socket = socket_io_client__WEBPACK_IMPORTED_MODULE_0__();\r\nsocket.on(\"initialize\", function (data) {\r\n    document.body.innerHTML = data;\r\n});\r\n\n\n//# sourceURL=webpack:///./client/index.ts?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! socket.io-client */ \"./client/node_modules/socket.io-client/lib/index.js\");\n/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(socket_io_client__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils */ \"./client/utils.ts\");\n\r\n\r\nvar socket = socket_io_client__WEBPACK_IMPORTED_MODULE_0__(\"//\" + window.location.host, {\r\n    query: \"session_id=\" + _utils__WEBPACK_IMPORTED_MODULE_1__[\"getCookie\"](\"USERDATA\")\r\n});\r\nwindow.socket = socket;\r\nsocket.on(\"initialize\", function (data) {\r\n    (document.body.querySelector(\".initializeMessage\")).innerText = data;\r\n    var createGameButton = document.createElement(\"button\");\r\n    createGameButton.innerText = \"Create Game\";\r\n    createGameButton.onclick = function () {\r\n        socket.emit(\"createGame\");\r\n    };\r\n    document.body.insertBefore(createGameButton, document.body.querySelector(\".activeGames\"));\r\n});\r\nsocket.on(\"gameCreated\", function (gameId) {\r\n    console.log(\"gameCreated\", gameId);\r\n    location.href = location.origin + (\"/game/\" + gameId);\r\n});\r\n\n\n//# sourceURL=webpack:///./client/index.ts?");
 
 /***/ }),
 
@@ -525,6 +525,18 @@ eval("module.exports = toArray\n\nfunction toArray(list, index) {\n    var array
 
 "use strict";
 eval("\n\nvar alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'.split('')\n  , length = 64\n  , map = {}\n  , seed = 0\n  , i = 0\n  , prev;\n\n/**\n * Return a string representing the specified number.\n *\n * @param {Number} num The number to convert.\n * @returns {String} The string representation of the number.\n * @api public\n */\nfunction encode(num) {\n  var encoded = '';\n\n  do {\n    encoded = alphabet[num % length] + encoded;\n    num = Math.floor(num / length);\n  } while (num > 0);\n\n  return encoded;\n}\n\n/**\n * Return the integer value specified by the given string.\n *\n * @param {String} str The string to convert.\n * @returns {Number} The integer value represented by the string.\n * @api public\n */\nfunction decode(str) {\n  var decoded = 0;\n\n  for (i = 0; i < str.length; i++) {\n    decoded = decoded * length + map[str.charAt(i)];\n  }\n\n  return decoded;\n}\n\n/**\n * Yeast: A tiny growing id generator.\n *\n * @returns {String} A unique id.\n * @api public\n */\nfunction yeast() {\n  var now = encode(+new Date());\n\n  if (now !== prev) return seed = 0, prev = now;\n  return now +'.'+ encode(seed++);\n}\n\n//\n// Map each character to its index.\n//\nfor (; i < length; i++) map[alphabet[i]] = i;\n\n//\n// Expose the `yeast`, `encode` and `decode` functions.\n//\nyeast.encode = encode;\nyeast.decode = decode;\nmodule.exports = yeast;\n\n\n//# sourceURL=webpack:///./client/node_modules/yeast/index.js?");
+
+/***/ }),
+
+/***/ "./client/utils.ts":
+/*!*************************!*\
+  !*** ./client/utils.ts ***!
+  \*************************/
+/*! exports provided: setCookie, getCookie, insertToArray */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"setCookie\", function() { return setCookie; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getCookie\", function() { return getCookie; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"insertToArray\", function() { return insertToArray; });\nvar setCookie = function (cname, cvalue, exdays) {\r\n    if (exdays === void 0) { exdays = 1; }\r\n    var d = new Date();\r\n    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);\r\n    var expires = \"expires=\" + d.toUTCString();\r\n    document.cookie = cname + \"=\" + cvalue + \";\" + expires + \";path=/\";\r\n};\r\nvar getCookie = function (cname) {\r\n    var name = cname + \"=\";\r\n    var decodedCookie = decodeURIComponent(document.cookie);\r\n    var ca = decodedCookie.split(\";\");\r\n    for (var i = 0; i < ca.length; i++) {\r\n        var c = ca[i];\r\n        while (c.charAt(0) == \" \") {\r\n            c = c.substring(1);\r\n        }\r\n        if (c.indexOf(name) == 0) {\r\n            return c.substring(name.length, c.length);\r\n        }\r\n    }\r\n    return \"\";\r\n};\r\nvar insertToArray = function (arr, index, newItem) { return arr.slice(0, index).concat([\r\n    newItem\r\n], arr.slice(index)); };\r\n\n\n//# sourceURL=webpack:///./client/utils.ts?");
 
 /***/ }),
 
