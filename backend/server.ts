@@ -124,7 +124,9 @@ io.on("connection", socket => {
 			 * looping through the activeGames and checking if that userid exists in anywhere
 			 * but that may take some & CPU so the first approach is prob. better.
 			 */
-		} else {
+		} else if (activeGames[gameId].userA.uid === socket.request.session.id)
+			socket.emit("redirectJoin", gameId);
+		else {
 			activeGames[gameId].userB.uid = socket.request.session.id;
 			socket.emit("joinSuccess", gameId);
 			socket.broadcast.emit("gameClosedForJoin", gameId);

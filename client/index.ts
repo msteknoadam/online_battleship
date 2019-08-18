@@ -57,3 +57,7 @@ socket.on("joinSuccess", (gameId: string) => {
 socket.on("gameClosedForJoin", (gameId: string) => {
 	utils.removeJoinGameButton(gameId);
 });
+
+socket.on("redirectJoin", (gameId: string) => {
+	location.href = `${location.origin}/game/${gameId}`;
+});
