@@ -30,3 +30,50 @@ export const insertToArray = (arr: Array<any>, index: number, newItem: any) => [
 	newItem,
 	...arr.slice(index)
 ];
+
+export const error = (error: string) => {
+	let errorBox = document.createElement("div");
+	errorBox.style.zIndex = "1";
+	errorBox.style.width = "50%";
+	errorBox.style.height = "10%";
+	errorBox.style.position = "absolute";
+	errorBox.style.top = "10px";
+	errorBox.style.left = "50%";
+	errorBox.style.transform = "translateX(-50%)";
+	errorBox.style.border = "2px black solid";
+	errorBox.style.borderRadius = "4px";
+	errorBox.style.background = "#FFFFFF";
+	errorBox.style.fontSize = "30px";
+	errorBox.style.textAlign = "center";
+	errorBox.innerText = error;
+	errorBox.onclick = () => {
+		if (errorBox) {
+			errorBox.parentElement.removeChild(errorBox);
+			errorBox = undefined;
+		}
+	};
+	setTimeout(() => {
+		if (errorBox) {
+			errorBox.parentElement.removeChild(errorBox);
+			errorBox = undefined;
+		}
+	}, 10e3);
+	document.body.appendChild(errorBox);
+};
+
+export const addJoinGameButton = (
+	gameId: string,
+	socket: SocketIOClient.Socket
+) => {
+	const joinButton = document.createElement("button");
+	joinButton.innerText = `Join Game #${gameId}`;
+	joinButton.onclick = () => socket.emit("joinGame", gameId);
+	joinButton.className = "joinGame";
+	joinButton.title = `${gameId}`;
+	document.querySelector(".activeGames").append(joinButton);
+};
+
+export const removeJoinGameButton = (gameId: string) => {
+	const el = document.querySelector(`.joinGame[title=${gameId}]`);
+	if (el) el.parentElement.removeChild(el);
+};

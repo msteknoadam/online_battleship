@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>Error 401 | Online Battleship</title>
+		<style>
+			body {
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>
+			Error 401
+			<br />
+			Unauthorized. You are not allowed to see this page.
+			<br />
+			You will be redirected to home page in 10 seconds.
+			<script>
+				setTimeout(() => (location.href = location.origin), 10e3);
+			</script>
+			<br />
+			<button onclick="location.href = location.origin">
+				Click Here to Go to Home Page Now
+			</button>
+		</h1>
+	</body>
+</html>
