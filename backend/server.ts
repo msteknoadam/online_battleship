@@ -73,6 +73,14 @@ app.get("/game/*", (req, res) => {
 	}
 });
 
+app.get("*.ts", (req, res) => {
+	utils.sendOpenSourcePage(req, res);
+});
+
+app.get("/node_modules*", (req, res) => {
+	utils.sendOpenSourcePage(req, res);
+});
+
 app.get("*", (req, res) => {
 	const filePath = path.join(__dirname, "..", "client", req.path);
 	fs.exists(filePath, exists => {

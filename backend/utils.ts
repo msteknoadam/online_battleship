@@ -18,6 +18,16 @@ export const error401 = (req: Request, res: Response) => {
 	});
 };
 
+export const sendOpenSourcePage = (req: Request, res: Response) => {
+	readFile(
+		join(__dirname, "..", "client", "openSource.html"),
+		(err, data) => {
+			if (err) res.sendStatus(500);
+			res.send(data.toString());
+		}
+	);
+};
+
 export const makeid = (length: number = 15) => {
 	var result = "";
 	var characters =
