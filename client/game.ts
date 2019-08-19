@@ -48,7 +48,7 @@ gameSocket.on("pickSuccessful", () => {
 });
 
 gameSocket.on("currentGame", (activeGame: types.activeGame) => {
-	console.log(activeGame);
+	// console.log(activeGame);
 	const statusText = <HTMLSpanElement>(
 		document.querySelector(".topbar .status")
 	);
@@ -165,13 +165,17 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 		utils.placeAlreadyPicked(activeGame[user].ships);
 		utils.placeAlreadyBombed(activeGame[user].bombarded);
 		utils.placeAlreadyPredicted(activeGame[user].predicted);
-		utils.setGameEnded();
+		utils.setGameEnded(
+			activeGame[user].won
+				? "Congratulations! You won!"
+				: "The other user won the game. You lost!"
+		);
 		document.body.className = "finished";
 	}
 });
 
-gameSocket.on("gameEnded", () => {
-	utils.setGameEnded();
+gameSocket.on("gameEnded", (message?: string) => {
+	utils.setGameEnded(message);
 });
 
 socket.on("onlineCount", (onlineCount: number) => {

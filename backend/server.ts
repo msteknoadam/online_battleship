@@ -9,6 +9,7 @@ import * as sessionstore from "sessionstore";
 import * as utils from "./utils";
 import * as types from "../typings";
 import * as CONFIG from "../gameConfig";
+import { setTokenSourceMapRange } from "typescript";
 
 const app = express();
 const secretKey = "TOTALLY_SECRET_XKCD";
@@ -49,14 +50,16 @@ const createGame = (creatorUserid: string) => {
 				ships: {},
 				bombarded: {},
 				predicted: {},
-				turn: true
+				turn: true,
+				won: false
 			},
 			userB: {
 				uid: undefined,
 				ships: {},
 				bombarded: {},
 				predicted: {},
-				turn: false
+				turn: false,
+				won: false
 			},
 			state: "WAITING"
 		};
@@ -155,15 +158,56 @@ const createGame = (creatorUserid: string) => {
 								] = activeGame[otherUser].ships[coordinate]
 									? "hit"
 									: "miss";
-								activeGame[user].turn = false;
-								activeGame[otherUser].turn = true;
-								utils.emitClientSideGame(activeGame, gameNsp);
 								utils.coloredConsoleLog(
 									`Info: User #${
 										socket.request.session.id
-									} bomed ${coordinate} coordinate successfully.`,
+									} bombed ${coordinate} coordinate successfully.`,
 									"green"
 								);
+								if (
+									Object.keys(
+										activeGame[user].predicted
+									).filter(
+										key =>
+											activeGame[user].predicted[key] ===
+											"hit"
+									).length === CONFIG.placesToPick
+								) {
+									activeGame[user].turn = false;
+									activeGame[otherUser].turn = false;
+									activeGame[user].won = true;
+									activeGame.state = "FINISHED";
+									utils.emitClientSideGame(
+										activeGame,
+										gameNsp
+									);
+									socket.emit(
+										"gameEnded",
+										"Congratulations! You won!"
+									);
+									socket.broadcast.emit(
+										"gameEnded",
+										`The other user won the game. You lost!`
+									);
+									utils.coloredConsoleLog(
+										`Info: User #${
+											socket.request.session.id
+										} won game #${gameId}.`,
+										"green"
+									);
+									endGame(
+										gameId,
+										activeGame.userA.uid,
+										activeGame.userB.uid
+									);
+								} else {
+									activeGame[user].turn = false;
+									activeGame[otherUser].turn = true;
+									utils.emitClientSideGame(
+										activeGame,
+										gameNsp
+									);
+								}
 							} else {
 								socket.emit(
 									"clientError",
@@ -220,8 +264,9 @@ const endGame = (gameId: string, userAuid: string, userBuid: string) => {
 		delete playingUsers[userAuid];
 		delete playingUsers[userBuid];
 	} catch (e) {
-		console.error(
-			`There has been an error while trying to end the game #${gameId}`
+		utils.coloredConsoleLog(
+			`There has been an error while trying to end the game #${gameId}`,
+			"red"
 		);
 	}
 };
@@ -362,7 +407,7 @@ io.on("connection", socket => {
 					? "userA"
 					: "userB";
 			const otherUser = user === "userA" ? "userB" : "userA";
-			gameSocket.emit("gameEnded");
+			gameSocket.emit("gameEnded", `User ${user} left the game.`);
 			activeGames[gameId].state = "FINISHED";
 			utils.coloredConsoleLog(
 				`Info: User #${activeGames[gameId][user].uid} and #${

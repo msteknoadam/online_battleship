@@ -77,12 +77,12 @@ export const addJoinGameButton = (
 
 export const boxIdRegex = /^[A-Z][0-9]+$/;
 
-export const setGameEnded = () => {
+export const setGameEnded = (optionalMessage: string = "") => {
 	const statusText = <HTMLSpanElement>(
 		document.querySelector(".topbar .status")
 	);
-	statusText.innerText = "The game has ended. You can now leave this page.";
-	document.body.className = "ended";
+	statusText.innerText = `${optionalMessage} The game has ended. You can now leave this page.`;
+	document.body.className = "finished";
 	(<HTMLButtonElement>(
 		document.body.querySelector(".leaveGame")
 	)).onclick = () => (location.href = location.origin);

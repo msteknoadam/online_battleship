@@ -10,6 +10,7 @@ export type gamePlayer = {
 		[s: string]: "hit" | "miss";
 	};
 	turn: boolean;
+	won: boolean;
 };
 
 export type activeGame = {
