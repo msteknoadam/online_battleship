@@ -1,3 +1,14 @@
 body * {
 	margin: 0;
 }
+
+.onlineHolder {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: 2px black solid;
+	border-radius: 5px;
+	font-size: 20px;
+	padding: 5px;
+	background: white;
+}

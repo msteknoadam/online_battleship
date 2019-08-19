@@ -1,0 +1,70 @@
+body * {
+	margin: 0;
+}
+
+.onlineHolder {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: 2px black solid;
+	border-radius: 5px;
+	font-size: 20px;
+	padding: 5px;
+	background: white;
+}
+
+table {
+	font-family: arial, sans-serif;
+	border-collapse: collapse;
+	table-layout: fixed;
+	width: 95%;
+	margin: 25px 2.5%;
+}
+
+table:first-child {
+	margin: 35px 2.5%;
+}
+
+td,
+th {
+	border: 1px solid #dddddd;
+	text-align: center;
+	padding: 8px;
+}
+
+tr:nth-child(even) :first-child,
+tr:first-child :nth-child(even) {
+	background-color: #dddddd;
+}
+
+.topbar {
+	width: 100%;
+	height: 25px;
+	align-items: center;
+	align-content: center;
+	align-self: center;
+	text-align: center;
+}
+
+body.waiting table button,
+body.noPicksLeft table tr td:not([class*="picked"]) button,
+body.finished table button,
+body.ended table button,
+body.picking table.predictionTable button,
+body.pickSuccessful table button,
+body.started table.playTable button,
+body.started.noTurn table.predictionTable button {
+	pointer-events: none;
+	color: grey;
+}
+
+body.picking table.playTable .picked,
+body.noPicksLeft table.playTable .picked {
+	background-color: orange;
+}
+
+body.ended table.playTable .picked,
+body.pickSuccessful table.playTable .picked,
+body.started table.playTable .picked {
+	background-color: green;
+}

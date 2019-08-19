@@ -1,3 +1,5 @@
+import * as types from "../typings";
+
 export const setCookie = (
 	cname: string,
 	cvalue: string,
@@ -73,7 +75,33 @@ export const addJoinGameButton = (
 	document.querySelector(".activeGames").append(joinButton);
 };
 
-export const removeJoinGameButton = (gameId: string) => {
-	const el = document.querySelector(`.joinGame[title=${gameId}]`);
-	if (el) el.parentElement.removeChild(el);
+export const boxIdRegex = /^[A-Z][0-9]+$/;
+
+export const setGameEnded = () => {
+	const statusText = <HTMLSpanElement>(
+		document.querySelector(".topbar .status")
+	);
+	statusText.innerText = "The game has ended. You can now leave this page.";
+	document.body.className = "ended";
+	(<HTMLButtonElement>(
+		document.body.querySelector(".leaveGame")
+	)).onclick = () => (location.href = location.origin);
+};
+
+export const placeAlreadyPicked = (pickedShips: types.pickedButtons) => {
+	Object.keys(pickedShips).forEach((boxId: string) => {
+		const el = document.querySelector(`.playTable .boxtd${boxId}`);
+		el.classList.add("picked");
+	});
+};
+
+export const removeButtonIfExists = (buttonClass: string) => {
+	const button = document.querySelector(buttonClass);
+	if (button) button.parentElement.removeChild(button);
+};
+
+export const setOnlineCount = (onlineCount: number) => {
+	(<HTMLSpanElement>(
+		document.querySelector(".onlineCount")
+	)).innerText = `${onlineCount}`;
 };

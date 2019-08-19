@@ -1,6 +1,8 @@
 declare global {
 	interface Window {
 		socket: SocketIOClient.Socket;
+		io: SocketIOClientStatic;
+		utils: any;
 	}
 }
 
@@ -12,6 +14,8 @@ const socket = io("//" + window.location.host, {
 	query: "session_id=" + utils.getCookie("USERDATA")
 });
 window.socket = socket;
+window.io = io;
+window.utils = utils;
 
 socket.on("initialize", (data: string) => {
 	const uid = data.slice(7);
@@ -40,13 +44,13 @@ socket.on("gameCreated", (gameId: string) => {
 
 socket.on("activeGames", (activeGames: types.activeGames) => {
 	Object.keys(activeGames).forEach(key => {
-		if (!activeGames[key].userB.uid) {
+		if (activeGames[key].state === "WAITING") {
 			utils.addJoinGameButton(key, socket);
 		}
 	});
 });
 
-socket.on("joinError", (error: string) => {
+socket.on("clientError", (error: string) => {
 	utils.error(error);
 });
 
@@ -55,9 +59,13 @@ socket.on("joinSuccess", (gameId: string) => {
 });
 
 socket.on("gameClosedForJoin", (gameId: string) => {
-	utils.removeJoinGameButton(gameId);
+	utils.removeButtonIfExists(`.joinGame[title=${gameId}]`);
 });
 
 socket.on("redirectJoin", (gameId: string) => {
 	location.href = `${location.origin}/game/${gameId}`;
+});
+
+socket.on("onlineCount", (onlineCount: number) => {
+	utils.setOnlineCount(onlineCount);
 });

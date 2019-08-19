@@ -5,8 +5,18 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 		<title>Game #{{ gameId }} | Online Battleship</title>
+		<link rel="stylesheet" href="./game.css" />
 	</head>
 	<body>
+		<div class="onlineHolder">
+			Currently Online: <span class="onlineCount">0</span>
+		</div>
+		<div class="topbar">
+			<span class="statusHolder">
+				Current Status:
+				<span class="status">CONNECTING TO THE SERVER</span>
+			</span>
+		</div>
 		<script src="./game.js"></script>
 	</body>
 </html>

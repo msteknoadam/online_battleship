@@ -8,6 +8,7 @@ import * as passport from "passport";
 import * as sessionstore from "sessionstore";
 import * as utils from "./utils";
 import * as types from "../typings";
+import * as CONFIG from "../gameConfig";
 
 const app = express();
 const secretKey = "TOTALLY_SECRET_XKCD";
@@ -19,6 +20,7 @@ const sessionMiddleware = session({
 });
 const server = http.createServer(app);
 const io = socketio(server);
+let onlineSessions: string[] = [];
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
@@ -27,7 +29,16 @@ io.use((socket, next) =>
 );
 
 const activeGames: types.activeGames = {};
+const gameSockets: { [s: string]: socketio.Namespace } = {};
 const playingUsers: types.playingUsers = {};
+
+setInterval(() => {
+	utils.coloredConsoleLog(
+		`Stats: Current online count: ${onlineSessions.length}`,
+		"green"
+	);
+	io.emit("onlineCount", onlineSessions.length);
+}, 60e3);
 
 const createGame = (creatorUserid: string) => {
 	const gameId = "g" + utils.makeid();
@@ -35,15 +46,105 @@ const createGame = (creatorUserid: string) => {
 		activeGames[gameId] = {
 			userA: {
 				uid: creatorUserid,
-				ships: [],
-				preds: []
+				ships: {},
+				bombarded: {},
+				turn: true
 			},
 			userB: {
 				uid: undefined,
-				ships: [],
-				preds: []
-			}
+				ships: {},
+				bombarded: {},
+				turn: false
+			},
+			state: "WAITING"
 		};
+		const gameNsp = io.of(`/${gameId}`);
+		gameNsp.on("connection", socket => {
+			const activeGame = activeGames[gameId];
+			const user =
+				activeGame.userA.uid === socket.request.session.id
+					? "userA"
+					: activeGame.userB.uid === socket.request.session.id
+					? "userB"
+					: "unauthorized";
+			if (user !== "unauthorized") {
+				// console.log(socket.request.session.id);
+				utils.emitClientSideGame(activeGame, gameNsp);
+				socket.on(
+					"setPlacement",
+					(pickedButtons: types.pickedButtons) => {
+						if (
+							Object.keys(pickedButtons).length !==
+							CONFIG.placesToPick
+						) {
+							socket.emit(
+								"clientError",
+								`Couldn't set your ship placements since there is a misconfiguration on your placements. Please refresh the page and try again.`
+							);
+							utils.coloredConsoleLog(
+								`Warning: User #${
+									socket.request.session.id
+								} tried to set ${JSON.stringify(
+									pickedButtons
+								)} as their picked buttons which seems not ok.`,
+								"yellow"
+							);
+						} else {
+							if (
+								Object.keys(activeGame[user].ships).length ===
+								CONFIG.placesToPick
+							) {
+								socket.emit(
+									"clientError",
+									"You already have sent your placements. Please refresh your page."
+								);
+								utils.coloredConsoleLog(
+									`Warning: User #${
+										socket.request.session.id
+									} tried to run "setPlacement" while that user has already picked placements.`,
+									"yellow"
+								);
+							} else {
+								activeGame[user].ships = pickedButtons;
+								socket.emit("pickSuccessful");
+								utils.coloredConsoleLog(
+									`Info: User #${
+										socket.request.session.id
+									} successfully set their placements as ${JSON.stringify(
+										pickedButtons
+									)}.`,
+									"green"
+								);
+								if (
+									Object.keys(activeGame[user].ships)
+										.length === CONFIG.placesToPick &&
+									Object.keys(
+										activeGame[
+											user === "userA" ? "userB" : "userA"
+										].ships
+									).length === CONFIG.placesToPick
+								) {
+									activeGame.state = "STARTED";
+									utils.coloredConsoleLog(
+										`Info: Game #${gameId} has started.`,
+										"green"
+									);
+								}
+								utils.emitClientSideGame(activeGame, gameNsp);
+							}
+						}
+					}
+				);
+			} else {
+				utils.coloredConsoleLog(
+					`Warning! User #${
+						socket.request.session.id
+					} tried to access to game #${gameId} which is a game that user doesn't belong to.`,
+					"red"
+				);
+			}
+		});
+		gameSockets[gameId] = gameNsp;
 		return gameId;
 	} else return createGame(creatorUserid);
 };
@@ -72,8 +173,8 @@ app.get("/", (req, res) => {
 
 app.get("/game/*", (req, res) => {
 	const requestedGame = req.path.replace("/game/", "");
-	if (requestedGame.endsWith(".js")) {
-		res.sendFile(path.join(__dirname, "..", "client", "game.js"));
+	if (requestedGame.includes(".")) {
+		res.sendFile(path.join(__dirname, "..", "client", requestedGame));
 	} else {
 		if (!activeGames[requestedGame]) utils.error404(req, res);
 		else if (
@@ -115,33 +216,53 @@ app.get("*", (req, res) => {
 });
 
 io.on("connection", socket => {
-	// console.log(socket.request.session.id);
-	// console.log(`New connection: ${socket.id}`);
+	if (!onlineSessions.includes(socket.request.session.id))
+		onlineSessions.push(socket.request.session.id);
 	socket.emit("initialize", `Hello #${socket.request.session.id}`);
+
+	/**
+	 * TODO: Feels like this needs to be replaced with currentlyJoinableGames
+	 * so it doesn't iterate over every game and don't mess up with CPU, otherwise
+	 * it will be same like the trivia site in the end.
+	 */
 	socket.emit("activeGames", activeGames);
+	socket.emit("onlineCount", onlineSessions.length);
+
 	socket.on("createGame", () => {
 		const gameId = createGame(socket.request.session.id);
 		socket.emit("gameCreateSuccessful", gameId);
 		socket.broadcast.emit("gameCreated", gameId);
 		playingUsers[socket.request.session.id] = gameId;
+		utils.coloredConsoleLog(
+			`Info: User #${
+				socket.request.session.id
+			} successfully created game #${gameId}`,
+			"green"
+		);
 	});
+
 	socket.on("joinGame", (gameId: string) => {
 		if (!activeGames[gameId]) {
 			socket.emit(
-				"joinError",
+				"clientError",
 				"There has been an error while trying to join the game. It seems like that game doesn't exist."
 			);
-			console.log(
-				`User #${
+			utils.coloredConsoleLog(
+				`Warning! User #${
 					socket.request.session.id
-				} tried to join to game #${gameId} which doesn't exist.`
+				} tried to join to game #${gameId} which doesn't exist.`,
+				"red"
 			);
-		} else if (!!activeGames[gameId].userB.uid) {
-			socket.emit("joinError", "Sorry, this game is already full.");
-			console.log(
-				`User #${
+		} else if (activeGames[gameId].state !== "WAITING") {
+			socket.emit(
+				"clientError",
+				"Sorry, this game is already full/finished."
+			);
+			utils.coloredConsoleLog(
+				`Warning: User #${
 					socket.request.session.id
-				} tried to join to a full game.`
+				} tried to join to game #${gameId} which is already full.`,
+				"red"
 			);
 		} else if (activeGames[gameId].userA.uid === socket.request.session.id)
 			socket.emit("redirectJoin", gameId);
@@ -152,13 +273,57 @@ io.on("connection", socket => {
 			);
 		else {
 			activeGames[gameId].userB.uid = socket.request.session.id;
+			activeGames[gameId].state = "PICKING";
 			socket.emit("joinSuccess", gameId);
 			socket.broadcast.emit("gameClosedForJoin", gameId);
 			playingUsers[socket.request.session.id] = gameId;
+			utils.emitClientSideGame(activeGames[gameId], gameSockets[gameId]);
+			utils.coloredConsoleLog(
+				`Info: User #${
+					socket.request.session.id
+				} successfully joined to the game #${gameId}`,
+				"green"
+			);
 		}
 	});
+
+	socket.on("leaveGame", () => {
+		const gameId = playingUsers[socket.request.session.id];
+		if (gameId) {
+			const gameSocket = gameSockets[gameId];
+			const user =
+				activeGames[gameId].userA.uid === socket.request.session.id
+					? "userA"
+					: "userB";
+			const otherUser = user === "userA" ? "userB" : "userA";
+			gameSocket.emit("gameEnded");
+			activeGames[gameId].state = "FINISHED";
+			utils.coloredConsoleLog(
+				`Info: User #${activeGames[gameId][user].uid} and #${
+					activeGames[gameId][otherUser].uid
+				} successfully left the game #${gameId}`,
+				"green"
+			);
+			delete playingUsers[activeGames[gameId].userA.uid];
+			delete playingUsers[activeGames[gameId].userB.uid];
+		} else {
+			socket.emit(
+				"clientError",
+				"You aren't currently playing any games."
+			);
+			utils.coloredConsoleLog(
+				`Warning: User #${
+					socket.request.session.id
+				} tried to run "leaveGame" command while that user is not in any games at the moment.`,
+				"red"
+			);
+		}
+	});
+
 	socket.on("disconnect", () => {
-		// console.log(`Dropped connection: ${socket.id}`);
+		onlineSessions = onlineSessions.filter(
+			val => val !== socket.request.session.id
+		);
 	});
 });
 
