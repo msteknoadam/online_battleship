@@ -12,3 +12,9 @@ body * {
 	padding: 5px;
 	background: white;
 }
+
+@media (max-width: 1000px) {
+	.onlineHolder {
+		display: none;
+	}
+}

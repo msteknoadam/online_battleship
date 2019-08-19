@@ -13,6 +13,12 @@ body * {
 	background: white;
 }
 
+@media (max-width: 1000px) {
+	.onlineHolder {
+		display: none;
+	}
+}
+
 table {
 	font-family: arial, sans-serif;
 	border-collapse: collapse;
@@ -61,7 +67,8 @@ body.started table.predictionTable .bombed button {
 
 body.picking table.playTable .picked,
 body.noPicksLeft table.playTable .picked,
-body.started table.playTable .picked {
+body.started table.playTable .picked,
+body.finished table.playTable .picked {
 	background-color: orange;
 }
 
