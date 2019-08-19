@@ -105,3 +105,19 @@ export const setOnlineCount = (onlineCount: number) => {
 		document.querySelector(".onlineCount")
 	)).innerText = `${onlineCount}`;
 };
+
+export const placeAlreadyBombed = (bombedPlaces: types.pickedButtons) => {
+	Object.keys(bombedPlaces).forEach((boxId: string) => {
+		const el = document.querySelector(`.playTable .boxtd${boxId}`);
+		el.classList.add("bombed");
+		el.classList.add(bombedPlaces[boxId]);
+	});
+};
+
+export const placeAlreadyPredicted = (predictedPlaces: types.pickedButtons) => {
+	Object.keys(predictedPlaces).forEach((boxId: string) => {
+		const el = document.querySelector(`.predictionTable .boxtd${boxId}`);
+		el.classList.add("bombed");
+		el.classList.add(predictedPlaces[boxId]);
+	});
+};

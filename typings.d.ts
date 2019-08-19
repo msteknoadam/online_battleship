@@ -1,10 +1,13 @@
 export type gamePlayer = {
 	uid: string | undefined;
 	ships: {
-		[s: string]: boolean;
+		[s: string]: "hit" | "miss";
 	};
 	bombarded: {
-		[s: string]: boolean;
+		[s: string]: "hit" | "miss";
+	};
+	predicted: {
+		[s: string]: "hit" | "miss";
 	};
 	turn: boolean;
 };
@@ -24,5 +27,5 @@ export type playingUsers = {
 };
 
 export type pickedButtons = {
-	[s: string]: boolean;
+	[s: string]: "hit" | "miss";
 };

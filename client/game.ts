@@ -74,6 +74,10 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 			document.body
 				.querySelectorAll("table.playTable button:not([class=picked])")
 				.forEach((button: HTMLButtonElement) => {
+					/**
+					 * TODO: Make t only allow to select just like battleship game,
+					 * so there should be 3x1, 3x1, 4x1 and 5x1 ships instead of just 1x1 ships.
+					 */
 					button.onclick = () => {
 						if (button.parentElement.classList.contains("picked")) {
 							button.parentElement.classList.remove("picked");
@@ -108,7 +112,7 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 												) {
 													pickedButtons[
 														pickedButton.innerText
-													] = true;
+													] = "miss";
 												} else {
 													utils.error(
 														`Unidentified boxId: ${
@@ -138,6 +142,8 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 		}
 	} else if (activeGame.state === "STARTED") {
 		utils.placeAlreadyPicked(activeGame[user].ships);
+		utils.placeAlreadyBombed(activeGame[user].bombarded);
+		utils.placeAlreadyPredicted(activeGame[user].predicted);
 		utils.removeButtonIfExists(".confirmButton");
 		if (activeGame[user].turn) {
 			document.body.className = "started turn";
@@ -148,10 +154,19 @@ gameSocket.on("currentGame", (activeGame: types.activeGame) => {
 			statusText.innerText =
 				"It's your opponent's turn. Please wait while the other user is choosing a coordinate to bomb.";
 		}
+		document
+			.querySelectorAll(`.predictionTable button:not([class=bombed])`)
+			.forEach((button: HTMLButtonElement) => {
+				button.onclick = () => {
+					gameSocket.emit("bombCoordinate", button.innerText);
+				};
+			});
 	} else if (activeGame.state === "FINISHED") {
+		utils.placeAlreadyPicked(activeGame[user].ships);
+		utils.placeAlreadyBombed(activeGame[user].bombarded);
+		utils.placeAlreadyPredicted(activeGame[user].predicted);
 		utils.setGameEnded();
 		document.body.className = "finished";
-	} else {
 	}
 });
 

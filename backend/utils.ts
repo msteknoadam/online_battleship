@@ -74,3 +74,5 @@ export const coloredConsoleLog = (
 ) => {
 	console.log(`${colors[color]}${text}${colors.black}`);
 };
+
+export const boxIdRegex = /^[A-Z][0-9]+$/;

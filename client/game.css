@@ -49,22 +49,33 @@ tr:first-child :nth-child(even) {
 body.waiting table button,
 body.noPicksLeft table tr td:not([class*="picked"]) button,
 body.finished table button,
-body.ended table button,
+body.finished table button,
 body.picking table.predictionTable button,
 body.pickSuccessful table button,
 body.started table.playTable button,
-body.started.noTurn table.predictionTable button {
+body.started.noTurn table.predictionTable button,
+body.started table.predictionTable .bombed button {
 	pointer-events: none;
 	color: grey;
 }
 
 body.picking table.playTable .picked,
-body.noPicksLeft table.playTable .picked {
+body.noPicksLeft table.playTable .picked,
+body.started table.playTable .picked {
 	background-color: orange;
 }
 
-body.ended table.playTable .picked,
 body.pickSuccessful table.playTable .picked,
-body.started table.playTable .picked {
+body.started table.predictionTable .bombed.hit,
+body.finished table.predictionTable .bombed.hit,
+body.finished table.playTable .bombed.miss,
+body.started table.playTable .bombed.miss {
 	background-color: green;
+}
+
+body.started table.predictionTable .bombed.miss,
+body.finished table.predictionTable .bombed.miss,
+body.finished table.playTable .bombed.hit,
+body.started table.playTable .bombed.hit {
+	background-color: red;
 }

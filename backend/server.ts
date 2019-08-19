@@ -48,12 +48,14 @@ const createGame = (creatorUserid: string) => {
 				uid: creatorUserid,
 				ships: {},
 				bombarded: {},
+				predicted: {},
 				turn: true
 			},
 			userB: {
 				uid: undefined,
 				ships: {},
 				bombarded: {},
+				predicted: {},
 				turn: false
 			},
 			state: "WAITING"
@@ -68,6 +70,7 @@ const createGame = (creatorUserid: string) => {
 					? "userB"
 					: "unauthorized";
 			if (user !== "unauthorized") {
+				const otherUser = user === "userA" ? "userB" : "userA";
 				// console.log(socket.request.session.id);
 				utils.emitClientSideGame(activeGame, gameNsp);
 				socket.on(
@@ -105,6 +108,9 @@ const createGame = (creatorUserid: string) => {
 									"yellow"
 								);
 							} else {
+								Object.keys(pickedButtons).forEach(
+									key => (pickedButtons[key] = "miss")
+								);
 								activeGame[user].ships = pickedButtons;
 								socket.emit("pickSuccessful");
 								utils.coloredConsoleLog(
@@ -135,6 +141,66 @@ const createGame = (creatorUserid: string) => {
 						}
 					}
 				);
+				socket.on("bombCoordinate", (coordinate: string) => {
+					if (utils.boxIdRegex.test(coordinate)) {
+						if (activeGame[user].turn) {
+							if (!activeGame[user].predicted[coordinate]) {
+								activeGame[user].predicted[
+									coordinate
+								] = activeGame[otherUser].ships[coordinate]
+									? "hit"
+									: "miss";
+								activeGame[otherUser].bombarded[
+									coordinate
+								] = activeGame[otherUser].ships[coordinate]
+									? "hit"
+									: "miss";
+								activeGame[user].turn = false;
+								activeGame[otherUser].turn = true;
+								utils.emitClientSideGame(activeGame, gameNsp);
+								utils.coloredConsoleLog(
+									`Info: User #${
+										socket.request.session.id
+									} bomed ${coordinate} coordinate successfully.`,
+									"green"
+								);
+							} else {
+								socket.emit(
+									"clientError",
+									"You have already bombed that coordinate. Please refresh your page."
+								);
+								utils.coloredConsoleLog(
+									`Warning! User #${
+										socket.request.session.id
+									} tried to bomb ${coordinate} which is already bombed.`,
+									"red"
+								);
+							}
+						} else {
+							socket.emit(
+								"clientError",
+								"It's not your turn yet. Please wait for your opponent's move."
+							);
+							utils.coloredConsoleLog(
+								`Warning! User #${
+									socket.request.session.id
+								} tried to bomb ${coordinate} while it's not that user's turn.`,
+								"red"
+							);
+						}
+					} else {
+						socket.emit(
+							"clientError",
+							"The coordinate you provided doesn't seem appropriate. Please try again."
+						);
+						utils.coloredConsoleLog(
+							`Warning! User #${
+								socket.request.session.id
+							} tried to bomb ${coordinate} coordinate which doesn't seem ok.`,
+							"red"
+						);
+					}
+				});
 			} else {
 				utils.coloredConsoleLog(
 					`Warning! User #${
