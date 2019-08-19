@@ -2,6 +2,10 @@ body * {
 	margin: 0;
 }
 
+body {
+	text-align: center;
+}
+
 .onlineHolder {
 	position: absolute;
 	top: 0;
@@ -13,8 +17,22 @@ body * {
 	background: white;
 }
 
+.footer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	padding: 10px;
+	border: 2px black solid;
+	border-radius: 5px;
+	text-align: center;
+	background-color: white;
+}
+
 @media (max-width: 1000px) {
 	.onlineHolder {
+		display: none;
+	}
+	.footer {
 		display: none;
 	}
 }
