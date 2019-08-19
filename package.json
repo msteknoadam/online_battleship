@@ -8,7 +8,7 @@
 		"install:frontend": "cd client && npm i",
 		"dev:backend": "nodemon --ignore client/ --exec node_modules/.bin/ts-node -- ./backend/server.ts",
 		"dev:frontend": "webpack --config ./webpack.frontend.config.dev.js --watch",
-		"start:backend": "node_modules/.bin/ts-node -- ./server/server.ts",
+		"start:backend": "node_modules/.bin/ts-node -- ./backend/server.ts",
 		"start:frontend": "webpack --config ./webpack.frontend.config.prod.js"
 	},
 	"repository": {
