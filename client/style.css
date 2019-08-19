@@ -21,14 +21,15 @@ body {
 	position: absolute;
 	top: 0;
 	left: 0;
-	padding: 10px;
+	padding: 5px;
+	font-size: 14px;
 	border: 2px black solid;
 	border-radius: 5px;
 	text-align: center;
 	background-color: white;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
 	.onlineHolder {
 		display: none;
 	}
