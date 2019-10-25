@@ -9,7 +9,30 @@ import * as sessionstore from "sessionstore";
 import * as utils from "./utils";
 import * as types from "../typings";
 import * as CONFIG from "../gameConfig";
-import { setTokenSourceMapRange } from "typescript";
+import { createLogger, format, transports } from "winston";
+const logger = createLogger({
+	level: "info",
+	format: format.combine(
+		format.timestamp({
+			format: "YYYY-MM-DD HH:mm:ss"
+		}),
+		format.errors({ stack: true }),
+		format.splat(),
+		format.json()
+	),
+	defaultMeta: { service: "BattleShip" },
+	transports: [
+		//
+		// - Write to all logs with level `info` and below to `quick-start-combined.log`.
+		// - Write all logs error (and below) to `quick-start-error.log`.
+		//
+		new transports.File({
+			filename: "logs/battleship-error.log",
+			level: "error"
+		}),
+		new transports.File({ filename: "logs/battleship-combined.log" })
+	]
+});
 
 const app = express();
 const secretKey = "TOTALLY_SECRET_XKCD";
@@ -34,10 +57,7 @@ const gameSockets: { [s: string]: socketio.Namespace } = {};
 const playingUsers: types.playingUsers = {};
 
 setInterval(() => {
-	utils.coloredConsoleLog(
-		`Stats: Current online count: ${onlineSessions.length}`,
-		"green"
-	);
+	logger.info(`Stats: Current online count: ${onlineSessions.length}`);
 	io.emit("onlineCount", onlineSessions.length);
 }, 60e3);
 
@@ -64,6 +84,12 @@ const createGame = (creatorUserid: string) => {
 			state: "WAITING"
 		};
 		const gameNsp = io.of(`/${gameId}`);
+		setTimeout(() => {
+			if (activeGames[gameId].state === "WAITING") {
+				endGame(gameId, activeGames[gameId].userA.uid);
+				gameNsp.emit("");
+			}
+		}, CONFIG.gameTimeoutInMinutes * 6 * 10e3);
 		gameNsp.on("connection", socket => {
 			const activeGame = activeGames[gameId];
 			const user =
@@ -87,13 +113,12 @@ const createGame = (creatorUserid: string) => {
 								"clientError",
 								`Couldn't set your ship placements since there is a misconfiguration on your placements. Please refresh the page and try again.`
 							);
-							utils.coloredConsoleLog(
+							logger.warning(
 								`Warning: User #${
 									socket.request.session.id
 								} tried to set ${JSON.stringify(
 									pickedButtons
-								)} as their picked buttons which seems not ok.`,
-								"yellow"
+								)} as their picked buttons which seems not ok.`
 							);
 						} else {
 							if (
@@ -104,11 +129,8 @@ const createGame = (creatorUserid: string) => {
 									"clientError",
 									"You already have sent your placements. Please refresh your page."
 								);
-								utils.coloredConsoleLog(
-									`Warning: User #${
-										socket.request.session.id
-									} tried to run "setPlacement" while that user has already picked placements.`,
-									"yellow"
+								logger.warning(
+									`Warning: User #${socket.request.session.id} tried to run "setPlacement" while that user has already picked placements.`
 								);
 							} else {
 								Object.keys(pickedButtons).forEach(
@@ -116,13 +138,12 @@ const createGame = (creatorUserid: string) => {
 								);
 								activeGame[user].ships = pickedButtons;
 								socket.emit("pickSuccessful");
-								utils.coloredConsoleLog(
+								logger.info(
 									`Info: User #${
 										socket.request.session.id
 									} successfully set their placements as ${JSON.stringify(
 										pickedButtons
-									)}.`,
-									"green"
+									)}.`
 								);
 								if (
 									Object.keys(activeGame[user].ships)
@@ -134,9 +155,8 @@ const createGame = (creatorUserid: string) => {
 									).length === CONFIG.placesToPick
 								) {
 									activeGame.state = "STARTED";
-									utils.coloredConsoleLog(
-										`Info: Game #${gameId} has started.`,
-										"green"
+									logger.info(
+										`Info: Game #${gameId} has started.`
 									);
 								}
 								utils.emitClientSideGame(activeGame, gameNsp);
@@ -158,11 +178,8 @@ const createGame = (creatorUserid: string) => {
 								] = activeGame[otherUser].ships[coordinate]
 									? "hit"
 									: "miss";
-								utils.coloredConsoleLog(
-									`Info: User #${
-										socket.request.session.id
-									} bombed ${coordinate} coordinate successfully.`,
-									"green"
+								logger.info(
+									`Info: User #${socket.request.session.id} bombed ${coordinate} coordinate successfully.`
 								);
 								if (
 									Object.keys(
@@ -189,11 +206,8 @@ const createGame = (creatorUserid: string) => {
 										"gameEnded",
 										`The other user won the game. You lost!`
 									);
-									utils.coloredConsoleLog(
-										`Info: User #${
-											socket.request.session.id
-										} won game #${gameId}.`,
-										"green"
+									logger.info(
+										`Info: User #${socket.request.session.id} won game #${gameId}.`
 									);
 									endGame(
 										gameId,
@@ -213,11 +227,8 @@ const createGame = (creatorUserid: string) => {
 									"clientError",
 									"You have already bombed that coordinate. Please refresh your page."
 								);
-								utils.coloredConsoleLog(
-									`Warning! User #${
-										socket.request.session.id
-									} tried to bomb ${coordinate} which is already bombed.`,
-									"red"
+								logger.warning(
+									`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} which is already bombed.`
 								);
 							}
 						} else {
@@ -225,11 +236,8 @@ const createGame = (creatorUserid: string) => {
 								"clientError",
 								"It's not your turn yet. Please wait for your opponent's move."
 							);
-							utils.coloredConsoleLog(
-								`Warning! User #${
-									socket.request.session.id
-								} tried to bomb ${coordinate} while it's not that user's turn.`,
-								"red"
+							logger.warning(
+								`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} while it's not that user's turn.`
 							);
 						}
 					} else {
@@ -237,20 +245,14 @@ const createGame = (creatorUserid: string) => {
 							"clientError",
 							"The coordinate you provided doesn't seem appropriate. Please try again."
 						);
-						utils.coloredConsoleLog(
-							`Warning! User #${
-								socket.request.session.id
-							} tried to bomb ${coordinate} coordinate which doesn't seem ok.`,
-							"red"
+						logger.warning(
+							`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} coordinate which doesn't seem ok.`
 						);
 					}
 				});
 			} else {
-				utils.coloredConsoleLog(
-					`Warning! User #${
-						socket.request.session.id
-					} tried to access to game #${gameId} which is a game that user doesn't belong to.`,
-					"red"
+				logger.warning(
+					`Warning! User #${socket.request.session.id} tried to access to game #${gameId} which is a game that user doesn't belong to.`
 				);
 			}
 		});
@@ -259,14 +261,13 @@ const createGame = (creatorUserid: string) => {
 	} else return createGame(creatorUserid);
 };
 
-const endGame = (gameId: string, userAuid: string, userBuid: string) => {
+const endGame = (gameId: string, userAuid: string, userBuid?: string) => {
 	try {
 		delete playingUsers[userAuid];
-		delete playingUsers[userBuid];
+		if (userBuid) delete playingUsers[userBuid];
 	} catch (e) {
-		utils.coloredConsoleLog(
-			`There has been an error while trying to end the game #${gameId}`,
-			"red"
+		logger.error(
+			`There has been an error while trying to end the game #${gameId}`
 		);
 	}
 };
@@ -344,11 +345,8 @@ io.on("connection", socket => {
 		socket.emit("gameCreateSuccessful", gameId);
 		socket.broadcast.emit("gameCreated", gameId);
 		playingUsers[socket.request.session.id] = gameId;
-		utils.coloredConsoleLog(
-			`Info: User #${
-				socket.request.session.id
-			} successfully created game #${gameId}`,
-			"green"
+		logger.info(
+			`Info: User #${socket.request.session.id} successfully created game #${gameId}`
 		);
 	});
 
@@ -358,22 +356,16 @@ io.on("connection", socket => {
 				"clientError",
 				"There has been an error while trying to join the game. It seems like that game doesn't exist."
 			);
-			utils.coloredConsoleLog(
-				`Warning! User #${
-					socket.request.session.id
-				} tried to join to game #${gameId} which doesn't exist.`,
-				"red"
+			logger.warning(
+				`Warning! User #${socket.request.session.id} tried to join to game #${gameId} which doesn't exist.`
 			);
 		} else if (activeGames[gameId].state !== "WAITING") {
 			socket.emit(
 				"clientError",
 				"Sorry, this game is already full/finished."
 			);
-			utils.coloredConsoleLog(
-				`Warning: User #${
-					socket.request.session.id
-				} tried to join to game #${gameId} which is already full.`,
-				"red"
+			logger.warning(
+				`Warning: User #${socket.request.session.id} tried to join to game #${gameId} which is already full.`
 			);
 		} else if (activeGames[gameId].userA.uid === socket.request.session.id)
 			socket.emit("redirectJoin", gameId);
@@ -389,11 +381,8 @@ io.on("connection", socket => {
 			socket.broadcast.emit("gameClosedForJoin", gameId);
 			playingUsers[socket.request.session.id] = gameId;
 			utils.emitClientSideGame(activeGames[gameId], gameSockets[gameId]);
-			utils.coloredConsoleLog(
-				`Info: User #${
-					socket.request.session.id
-				} successfully joined to the game #${gameId}`,
-				"green"
+			logger.info(
+				`Info: User #${socket.request.session.id} successfully joined to the game #${gameId}`
 			);
 		}
 	});
@@ -409,11 +398,8 @@ io.on("connection", socket => {
 			const otherUser = user === "userA" ? "userB" : "userA";
 			gameSocket.emit("gameEnded", `User ${user} left the game.`);
 			activeGames[gameId].state = "FINISHED";
-			utils.coloredConsoleLog(
-				`Info: User #${activeGames[gameId][user].uid} and #${
-					activeGames[gameId][otherUser].uid
-				} successfully left the game #${gameId}`,
-				"green"
+			logger.info(
+				`Info: User #${activeGames[gameId][user].uid} and #${activeGames[gameId][otherUser].uid} successfully left the game #${gameId}`
 			);
 			delete playingUsers[activeGames[gameId].userA.uid];
 			delete playingUsers[activeGames[gameId].userB.uid];
@@ -422,11 +408,8 @@ io.on("connection", socket => {
 				"clientError",
 				"You aren't currently playing any games."
 			);
-			utils.coloredConsoleLog(
-				`Warning: User #${
-					socket.request.session.id
-				} tried to run "leaveGame" command while that user is not in any games at the moment.`,
-				"red"
+			logger.warning(
+				`Warning: User #${socket.request.session.id} tried to run "leaveGame" command while that user is not in any games at the moment.`
 			);
 		}
 	});
