@@ -33,7 +33,7 @@ const logger = createLogger({
 		new transports.File({ filename: "logs/battleship-combined.log" })
 	]
 });
-
+const userList = {};
 const app = express();
 const secretKey = "TOTALLY_SECRET_XKCD";
 const sessionStore = sessionstore.createSessionStore();
@@ -260,7 +260,7 @@ app.get("*", (req, res) => {
 
 io.on("connection", socket => {
 	if (!onlineSessions.includes(socket.request.session.id)) onlineSessions.push(socket.request.session.id);
-	socket.emit("initialize", `Hello #${socket.request.session.id}`);
+	socket.emit("initialize", `Hello #${userList[socket.request.session.id] || socket.request.session.id}`);
 
 	/**
 	 * TODO: Feels like this needs to be replaced with currentlyJoinableGames
@@ -277,7 +277,10 @@ io.on("connection", socket => {
 		playingUsers[socket.request.session.id] = gameId;
 		logger.info(`Info: User #${socket.request.session.id} successfully created game #${gameId}`);
 	});
-
+ socket.on("setUsername", (newUsername: string) => {
+	 userList[socket.request.session.id] = newUsername
+	 console.log("The username is " + newUsername);
+	 });
 	socket.on("joinGame", (gameId: string) => {
 		if (!activeGames[gameId]) {
 			socket.emit(

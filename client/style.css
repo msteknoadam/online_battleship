@@ -4,7 +4,7 @@ body * {
 
 body {
 	text-align: center;
-}
+} 
 
 .onlineHolder {
 	position: absolute;
@@ -16,6 +16,7 @@ body {
 	padding: 5px;
 	background: white;
 }
+
 
 .footer {
 	position: absolute;
