@@ -14,7 +14,7 @@ const logger = createLogger({
 	level: "info",
 	format: format.combine(
 		format.timestamp({
-			format: "YYYY-MM-DD HH:mm:ss"
+			format: "YYYY-MM-DD HH:mm:ss",
 		}),
 		format.errors({ stack: true }),
 		format.splat(),
@@ -28,10 +28,10 @@ const logger = createLogger({
 		//
 		new transports.File({
 			filename: "logs/battleship-error.log",
-			level: "error"
+			level: "error",
 		}),
-		new transports.File({ filename: "logs/battleship-combined.log" })
-	]
+		new transports.File({ filename: "logs/battleship-combined.log" }),
+	],
 });
 const userList = {};
 const app = express();
@@ -40,7 +40,7 @@ const sessionStore = sessionstore.createSessionStore();
 const sessionMiddleware = session({
 	name: "USERDATA",
 	secret: secretKey,
-	store: sessionStore
+	store: sessionStore,
 });
 const server = http.createServer(app);
 const io = socketio(server);
@@ -68,7 +68,7 @@ const createGame = (creatorUserid: string) => {
 				bombarded: {},
 				predicted: {},
 				turn: true,
-				won: false
+				won: false,
 			},
 			userB: {
 				uid: undefined,
@@ -76,9 +76,9 @@ const createGame = (creatorUserid: string) => {
 				bombarded: {},
 				predicted: {},
 				turn: false,
-				won: false
+				won: false,
 			},
-			state: "WAITING"
+			state: "WAITING",
 		};
 		const gameNsp = io.of(`/${gameId}`);
 		setTimeout(() => {
@@ -87,7 +87,7 @@ const createGame = (creatorUserid: string) => {
 				gameNsp.emit("");
 			}
 		}, CONFIG.gameTimeoutInMinutes * 6 * 10e3);
-		gameNsp.on("connection", socket => {
+		gameNsp.on("connection", (socket) => {
 			const activeGame = activeGames[gameId];
 			const user =
 				activeGame.userA.uid === socket.request.session.id
@@ -120,7 +120,7 @@ const createGame = (creatorUserid: string) => {
 								`Warning: User #${socket.request.session.id} tried to run "setPlacement" while that user has already picked placements.`
 							);
 						} else {
-							Object.keys(pickedButtons).forEach(key => (pickedButtons[key] = "miss"));
+							Object.keys(pickedButtons).forEach((key) => (pickedButtons[key] = "miss"));
 							activeGame[user].ships = pickedButtons;
 							socket.emit("pickSuccessful");
 							logger.info(
@@ -155,7 +155,7 @@ const createGame = (creatorUserid: string) => {
 								);
 								if (
 									Object.keys(activeGame[user].predicted).filter(
-										key => activeGame[user].predicted[key] === "hit"
+										(key) => activeGame[user].predicted[key] === "hit"
 									).length === CONFIG.placesToPick
 								) {
 									activeGame[user].turn = false;
@@ -252,13 +252,13 @@ app.get("/node_modules*", (req, res) => {
 
 app.get("*", (req, res) => {
 	const filePath = path.join(__dirname, "..", "client", req.path);
-	fs.exists(filePath, exists => {
+	fs.exists(filePath, (exists) => {
 		if (exists) res.sendFile(filePath);
 		else utils.error404(req, res);
 	});
 });
 
-io.on("connection", socket => {
+io.on("connection", (socket) => {
 	if (!onlineSessions.includes(socket.request.session.id)) onlineSessions.push(socket.request.session.id);
 	socket.emit("initialize", `Hello #${userList[socket.request.session.id] || socket.request.session.id}`);
 
@@ -277,10 +277,10 @@ io.on("connection", socket => {
 		playingUsers[socket.request.session.id] = gameId;
 		logger.info(`Info: User #${socket.request.session.id} successfully created game #${gameId}`);
 	});
- socket.on("setUsername", (newUsername: string) => {
-	 userList[socket.request.session.id] = newUsername
-	 console.log("The username is " + newUsername);
-	 });
+	socket.on("setUsername", (newUsername: string) => {
+		userList[socket.request.session.id] = newUsername;
+		console.log("User #" + socket.request.session.id + " changed his username to " + newUsername);
+	});
 	socket.on("joinGame", (gameId: string) => {
 		if (!activeGames[gameId]) {
 			socket.emit(
@@ -331,7 +331,7 @@ io.on("connection", socket => {
 	});
 
 	socket.on("disconnect", () => {
-		onlineSessions = onlineSessions.filter(val => val !== socket.request.session.id);
+		onlineSessions = onlineSessions.filter((val) => val !== socket.request.session.id);
 	});
 });
 
