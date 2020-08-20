@@ -106,9 +106,11 @@ const createGame = (creatorUserid: string) => {
 							`Couldn't set your ship placements since there is a misconfiguration on your placements. Please refresh the page and try again.`
 						);
 						logger.info(
-							`Warning: User #${socket.request.session.id} tried to set ${JSON.stringify(
-								pickedButtons
-							)} as their picked buttons which seems not ok.`
+							`Warning: User ${socket.request.session.id}${
+								utils.getUsername(userList, socket.request.session.id)
+									? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+									: ""
+							} tried to set ${JSON.stringify(pickedButtons)} as their picked buttons which seems not ok.`
 						);
 					} else {
 						if (Object.keys(activeGame[user].ships).length === CONFIG.placesToPick) {
@@ -117,7 +119,11 @@ const createGame = (creatorUserid: string) => {
 								"You already have sent your placements. Please refresh your page."
 							);
 							logger.info(
-								`Warning: User #${socket.request.session.id} tried to run "setPlacement" while that user has already picked placements.`
+								`Warning: User ${socket.request.session.id}${
+									utils.getUsername(userList, socket.request.session.id)
+										? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+										: ""
+								} tried to run "setPlacement" while that user has already picked placements.`
 							);
 						} else {
 							Object.keys(pickedButtons).forEach((key) => (pickedButtons[key] = "miss"));
@@ -165,7 +171,13 @@ const createGame = (creatorUserid: string) => {
 									utils.emitClientSideGame(activeGame, gameNsp);
 									socket.emit("gameEnded", "Congratulations! You won!");
 									socket.broadcast.emit("gameEnded", `The other user won the game. You lost!`);
-									logger.info(`Info: User #${socket.request.session.id} won game #${gameId}.`);
+									logger.info(
+										`Info: User ${socket.request.session.id}${
+											utils.getUsername(userList, socket.request.session.id)
+												? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+												: ""
+										} won game #${gameId}.`
+									);
 									endGame(gameId, activeGame.userA.uid, activeGame.userB.uid);
 								} else {
 									activeGame[user].turn = false;
@@ -178,13 +190,21 @@ const createGame = (creatorUserid: string) => {
 									"You have already bombed that coordinate. Please refresh your page."
 								);
 								logger.info(
-									`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} which is already bombed.`
+									`Warning! User ${socket.request.session.id}${
+										utils.getUsername(userList, socket.request.session.id)
+											? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+											: ""
+									} tried to bomb ${coordinate} which is already bombed.`
 								);
 							}
 						} else {
 							socket.emit("clientError", "It's not your turn yet. Please wait for your opponent's move.");
 							logger.info(
-								`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} while it's not that user's turn.`
+								`Warning! User ${socket.request.session.id}${
+									utils.getUsername(userList, socket.request.session.id)
+										? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+										: ""
+								} tried to bomb ${coordinate} while it's not that user's turn.`
 							);
 						}
 					} else {
@@ -193,13 +213,21 @@ const createGame = (creatorUserid: string) => {
 							"The coordinate you provided doesn't seem appropriate. Please try again."
 						);
 						logger.info(
-							`Warning! User #${socket.request.session.id} tried to bomb ${coordinate} coordinate which doesn't seem ok.`
+							`Warning! User ${socket.request.session.id}${
+								utils.getUsername(userList, socket.request.session.id)
+									? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+									: ""
+							} tried to bomb ${coordinate} coordinate which doesn't seem ok.`
 						);
 					}
 				});
 			} else {
 				logger.info(
-					`Warning! User #${socket.request.session.id} tried to access to game #${gameId} which is a game that user doesn't belong to.`
+					`Warning! User ${socket.request.session.id}${
+						utils.getUsername(userList, socket.request.session.id)
+							? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+							: ""
+					} tried to access to game #${gameId} which is a game that user doesn't belong to.`
 				);
 			}
 		});
@@ -260,7 +288,7 @@ app.get("*", (req, res) => {
 
 io.on("connection", (socket) => {
 	if (!onlineSessions.includes(socket.request.session.id)) onlineSessions.push(socket.request.session.id);
-	socket.emit("initialize", `Hello #${userList[socket.request.session.id] || socket.request.session.id}`);
+	socket.emit("initialize", `Hello ${utils.getUsername(userList, socket.request.session.id)}`);
 
 	/**
 	 * TODO: Feels like this needs to be replaced with currentlyJoinableGames
@@ -275,11 +303,17 @@ io.on("connection", (socket) => {
 		socket.emit("gameCreateSuccessful", gameId);
 		socket.broadcast.emit("gameCreated", gameId);
 		playingUsers[socket.request.session.id] = gameId;
-		logger.info(`Info: User #${socket.request.session.id} successfully created game #${gameId}`);
+		logger.info(
+			`Info: User ${socket.request.session.id}${
+				utils.getUsername(userList, socket.request.session.id)
+					? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+					: ""
+			} successfully created game #${gameId}`
+		);
 	});
 	socket.on("setUsername", (newUsername: string) => {
 		userList[socket.request.session.id] = newUsername;
-		console.log("User #" + socket.request.session.id + " changed his username to " + newUsername);
+		logger.info(`User #${socket.request.session.id} changed his username to ${newUsername}`);
 	});
 	socket.on("joinGame", (gameId: string) => {
 		if (!activeGames[gameId]) {
@@ -288,12 +322,20 @@ io.on("connection", (socket) => {
 				"There has been an error while trying to join the game. It seems like that game doesn't exist."
 			);
 			logger.info(
-				`Warning! User #${socket.request.session.id} tried to join to game #${gameId} which doesn't exist.`
+				`Warning! User ${socket.request.session.id}${
+					utils.getUsername(userList, socket.request.session.id)
+						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+						: ""
+				} tried to join to game #${gameId} which doesn't exist.`
 			);
 		} else if (activeGames[gameId].state !== "WAITING") {
 			socket.emit("clientError", "Sorry, this game is already full/finished.");
 			logger.info(
-				`Warning: User #${socket.request.session.id} tried to join to game #${gameId} which is already full.`
+				`Warning: User ${socket.request.session.id}${
+					utils.getUsername(userList, socket.request.session.id)
+						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+						: ""
+				} tried to join to game #${gameId} which is already full.`
 			);
 		} else if (activeGames[gameId].userA.uid === socket.request.session.id) socket.emit("redirectJoin", gameId);
 		else if (playingUsers[socket.request.session.id])
@@ -305,7 +347,13 @@ io.on("connection", (socket) => {
 			socket.broadcast.emit("gameClosedForJoin", gameId);
 			playingUsers[socket.request.session.id] = gameId;
 			utils.emitClientSideGame(activeGames[gameId], gameSockets[gameId]);
-			logger.info(`Info: User #${socket.request.session.id} successfully joined to the game #${gameId}`);
+			logger.info(
+				`Info: User ${socket.request.session.id}${
+					utils.getUsername(userList, socket.request.session.id)
+						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+						: ""
+				} successfully joined to the game #${gameId}`
+			);
 		}
 	});
 
@@ -325,7 +373,11 @@ io.on("connection", (socket) => {
 		} else {
 			socket.emit("clientError", "You aren't currently playing any games.");
 			logger.info(
-				`Warning: User #${socket.request.session.id} tried to run "leaveGame" command while that user is not in any games at the moment.`
+				`Warning: User ${socket.request.session.id}${
+					utils.getUsername(userList, socket.request.session.id)
+						? `Username: ${utils.getUsername(userList, socket.request.session.id)}`
+						: ""
+				} tried to run "leaveGame" command while that user is not in any games at the moment.`
 			);
 		}
 	});
