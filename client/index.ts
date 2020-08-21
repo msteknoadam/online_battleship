@@ -23,17 +23,31 @@ socket.on("initialize", (data: string) => {
 		document.body.querySelector(".initializeMessage")
 	)).innerHTML = `${data}<br />`;
 	const createGameButton = document.createElement("button");
+
+
 	createGameButton.innerText = "Create Game";
+
 	createGameButton.onclick = () => {
 		socket.emit("createGame");
 	};
 	createGameButton.title = uid;
 	createGameButton.className = "createGame";
+	
+    const setUsernameButton = document.createElement("button");
+	setUsernameButton.innerText = "Set Username";
+	setUsernameButton.onclick = () => {
+		const newUsername = prompt("Set your username"); 
+		socket.emit("setUsername", newUsername);
+		console.log(newUsername);
+		
+	};
+	setUsernameButton.title = uid;
+	setUsernameButton.className = "loginbutton";
 	document.body
 		.querySelector(".initializeMessage")
 		.appendChild(createGameButton);
+		document.body.appendChild(setUsernameButton);		
 });
-
 socket.on("gameCreateSuccessful", (gameId: string) => {
 	location.href = location.origin + `/game/${gameId}`;
 });
