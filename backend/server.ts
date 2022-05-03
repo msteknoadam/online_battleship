@@ -389,5 +389,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-	console.log(`Listening on *:${3000}`);
+	console.log(`Listening on *:${PORT}`);
 });
