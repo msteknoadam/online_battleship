@@ -4,6 +4,7 @@
 	"description": "Trying to build an online battleship 1v1 game using NodeJS",
 	"main": "backend.ts",
 	"scripts": {
+		"postinstall": "npm run install:frontend && npm run start:frontend",
 		"install:backend": "npm i",
 		"install:frontend": "cd client && npm i",
 		"dev:backend": "nodemon --ignore client/ --exec node_modules/.bin/ts-node -- ./backend/server.ts",
@@ -49,7 +50,6 @@
 		"winston": "^3.2.1"
 	},
 	"engines": {
-		"node": "12.10.0",
-		"yarn": "1.19.1"
- 	}
+		"node": "12.10.0"
+	}
 }
