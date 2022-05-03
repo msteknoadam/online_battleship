@@ -10,6 +10,7 @@ import * as utils from "./utils";
 import * as types from "../typings";
 import * as CONFIG from "../gameConfig";
 import { createLogger, format, transports } from "winston";
+const PORT = process.env.PORT || 3000;
 const logger = createLogger({
 	level: "info",
 	format: format.combine(
@@ -387,6 +388,6 @@ io.on("connection", (socket) => {
 	});
 });
 
-server.listen(3000, () => {
+server.listen(PORT, () => {
 	console.log(`Listening on *:${3000}`);
 });
