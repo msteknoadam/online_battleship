@@ -14,7 +14,7 @@ export type gamePlayer = {
 };
 
 export type activeGame = {
-	userA: gamePlayer;
+	userA: gamePlayer & { uid: string };
 	userB: gamePlayer;
 	state: "WAITING" | "PICKING" | "STARTED" | "FINISHED";
 };

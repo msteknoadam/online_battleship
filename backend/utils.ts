@@ -60,6 +60,6 @@ export const coloredConsoleLog = (text: string, color: colorTypes = "black") => 
 
 export const boxIdRegex = /^[A-Z][0-9]+$/;
 
-export const getUsername = (userList: { [s: string]: string }, userId: string): string => {
-	return userList[userId] || userId;
+export const getUsername = (userList: Map<string, string>, userId: string): string => {
+	return userList.get(userId) || userId;
 };

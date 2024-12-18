@@ -1,11 +1,9 @@
-import * as express from "express";
-import * as socketio from "socket.io";
+import express from "express";
+import socketio from "socket.io";
 import * as http from "http";
 import * as path from "path";
 import * as fs from "fs";
-import * as session from "express-session";
-import * as passport from "passport";
-import * as sessionstore from "sessionstore";
+import session from "express-session";
 import * as utils from "./utils";
 import * as types from "../typings";
 import * as CONFIG from "../gameConfig";
@@ -34,22 +32,21 @@ const logger = createLogger({
 		new transports.File({ filename: "logs/battleship-combined.log" }),
 	],
 });
-const userList = {};
+const userList: Map<string, string> = new Map();
 const app = express();
 const secretKey = "TOTALLY_SECRET_XKCD";
-const sessionStore = sessionstore.createSessionStore();
 const sessionMiddleware = session({
-	name: "USERDATA",
 	secret: secretKey,
-	store: sessionStore,
+	resave: false,
+	saveUninitialized: true,
 });
+app.use(sessionMiddleware);
 const server = http.createServer(app);
 const io = socketio(server);
+io.use((socket, next) => {
+	sessionMiddleware(socket.request, {} as any, next);
+});
 let onlineSessions: string[] = [];
-app.use(sessionMiddleware);
-app.use(passport.initialize());
-app.use(passport.session());
-io.use((socket, next) => sessionMiddleware(socket.request, socket.request.res, next));
 
 const activeGames: types.activeGames = {};
 const gameSockets: { [s: string]: socketio.Namespace } = {};
@@ -313,7 +310,7 @@ io.on("connection", (socket) => {
 		);
 	});
 	socket.on("setUsername", (newUsername: string) => {
-		userList[socket.request.session.id] = newUsername;
+		userList.set(socket.request.session.id, newUsername);
 		logger.info(`User #${socket.request.session.id} changed his username to ${newUsername}`);
 	});
 	socket.on("joinGame", (gameId: string) => {
@@ -370,7 +367,7 @@ io.on("connection", (socket) => {
 				`Info: User #${activeGames[gameId][user].uid} and #${activeGames[gameId][otherUser].uid} successfully left the game #${gameId}`
 			);
 			delete playingUsers[activeGames[gameId].userA.uid];
-			delete playingUsers[activeGames[gameId].userB.uid];
+			if (activeGames[gameId].userB.uid) delete playingUsers[activeGames[gameId].userB.uid];
 		} else {
 			socket.emit("clientError", "You aren't currently playing any games.");
 			logger.info(

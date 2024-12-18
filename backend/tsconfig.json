@@ -1,0 +1,9 @@
+{
+	"exclude": ["node_modules"],
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"module": "NodeNext",
+		"target": "es5",
+		"moduleResolution": "nodenext"
+	}
+}
